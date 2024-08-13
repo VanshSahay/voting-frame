@@ -17,7 +17,7 @@ export const app = new Frog({
   title: 'Dblocked-frame',
 })
 
-const pollingOptions = [
+let pollingOptions = [
   {
     value : "Rollups and Layer 2s",
     optionTag : "A",
@@ -27,37 +27,24 @@ const pollingOptions = [
     value : "Account Abstraction",
     optionTag : "B",
     voteCount : 0
-  },
-  // {
-  //   value : "Defi",
-  //   optionTag : "C",
-  //   voteCount : 0
-  // },
-  // {
-  //   value : "Aptos",
-  //   optionTag : "D",
-  //   voteCount : 0
-  // },
-  // {
-  //   value : "Rust",
-  //   optionTag : "E",
-  //   voteCount : 0
-  // }
+  }
 ]
+
 let userFid:any = []
 let voted:any = []
 
 app.frame('/', (c) => {
-
   const { buttonValue, inputText, status, frameData } = c
 
-  if (status === 'response') {
-    const newOption:any = {
-      value: inputText,
-      optionTag: String.fromCharCode(pollingOptions[pollingOptions.length - 1].optionTag.charCodeAt(0) + 1),
-      voteCount: 1
-    }
-    if(userFid.includes(frameData?.fid)) {
+  const newOption:any = {
+    value: inputText,
+    optionTag: String.fromCharCode(pollingOptions[pollingOptions.length - 1].optionTag.charCodeAt(0) + 1),
+    voteCount: 1
+  }
+  if (buttonValue == "Nothing" && inputText !== undefined && pollingOptions.length < 3) {
+    pollingOptions.push(newOption)
+    voted.push({userVoted: inputText, fid: frameData?.fid})
+  } else if(inputText == undefined && buttonValue == "Nothing") {
       return c.res({
         image: (
           <div
@@ -88,6 +75,49 @@ app.frame('/', (c) => {
               }}
             >
               <h2>
+                No Topic Given
+              </h2>
+            </div>
+          </div>
+        ),
+        intents: [
+          <Button.Reset>Try Again</Button.Reset>,
+        ],
+      }) 
+  }
+
+  if (status === 'response') {
+    if(userFid.includes(frameData?.fid)) {
+      return c.res({
+        image: (
+          <div
+          style={{
+            alignItems: 'center',
+            background: 'black',
+              backgroundSize: '100% 100%',
+              display: 'flex',
+              flexDirection: 'column',
+              flexWrap: 'nowrap',
+              height: '100%',
+              justifyContent: 'center',
+              textAlign: 'center',
+              width: '100%',
+            }}
+            >
+            <div
+              style={{
+                color: 'white',
+                fontSize: 40,
+                fontStyle: 'normal',
+                letterSpacing: '-0.025em',
+                marginTop: 30,
+                padding: '0 120px',
+                whiteSpace: 'pre-wrap',
+                display: 'flex',
+                flexDirection : 'column',
+              }}
+              >
+              <h2>
                 You've already Voted for - {"\n"}
                 {
                   voted.map((_vote: any) => {
@@ -101,6 +131,7 @@ app.frame('/', (c) => {
               <ul style={{display : 'flex', flexDirection: 'column'}}>
               {
                 pollingOptions.map(_pollingOption => {
+                  console.log(_pollingOption.voteCount)
                   return(
                     <li key={_pollingOption.optionTag}>
                       {_pollingOption.optionTag} : {_pollingOption.value} - {_pollingOption.voteCount}
@@ -117,57 +148,14 @@ app.frame('/', (c) => {
         ],
       })
     }
-    if (buttonValue == "Nothing" && inputText !== undefined && pollingOptions.length < 3) {
-      pollingOptions.push(newOption)
-      voted.push({userVoted: inputText, fid: frameData?.fid})
-    } else if(inputText !== undefined && buttonValue == "Nothing") {
-        return c.res({
-          image: (
-            <div
-              style={{
-                alignItems: 'center',
-                background: 'black',
-                backgroundSize: '100% 100%',
-                display: 'flex',
-                flexDirection: 'column',
-                flexWrap: 'nowrap',
-                height: '100%',
-                justifyContent: 'center',
-                textAlign: 'center',
-                width: '100%',
-              }}
-            >
-              <div
-                style={{
-                  color: 'white',
-                  fontSize: 40,
-                  fontStyle: 'normal',
-                  letterSpacing: '-0.025em',
-                  marginTop: 30,
-                  padding: '0 120px',
-                  whiteSpace: 'pre-wrap',
-                  display: 'flex',
-                  flexDirection : 'column',
-                }}
-              >
-                <h2>
-                  Cannot Add More Topics
-                </h2>
-              </div>
-            </div>
-          ),
-          intents: [
-            <Button.Reset>Try Again</Button.Reset>,
-          ],
-        }) 
-    }
-    pollingOptions.map(_pollingOptions => {
+    userFid.push(frameData?.fid)
+    pollingOptions = pollingOptions.map(_pollingOptions => {
       if (_pollingOptions.value === buttonValue) {
         voted.push({userVoted: _pollingOptions.value, fid: frameData?.fid})
-        _pollingOptions.voteCount+=1
+        return{..._pollingOptions ,voteCount: _pollingOptions.voteCount+1}
       }
+      return _pollingOptions
     })
-    userFid.push(frameData?.fid)
     return c.res({
       image: (
         <div
@@ -198,7 +186,7 @@ app.frame('/', (c) => {
             }}
           >
             <h2>
-              You Voted for : {buttonValue}
+              Recorded Vote
             </h2>
             <ul style={{display : 'flex', flexDirection: 'column'}}>
               {
@@ -213,11 +201,7 @@ app.frame('/', (c) => {
             </ul>
           </div>
         </div>
-      ),
-      intents: [
-        <TextInput placeholder="Suggest A Topic..." />,
-        <Button.Reset>Vote Again</Button.Reset>,
-      ],
+      )
     })
   }
   return c.res({
