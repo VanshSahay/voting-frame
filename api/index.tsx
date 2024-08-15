@@ -186,7 +186,7 @@ app.frame('/', (c) => {
             }}
           >
             <h2>
-              Recorded Vote!
+              Recorded Vote!~
             </h2>
             <ul style={{display : 'flex', flexDirection: 'column'}}>
               {
